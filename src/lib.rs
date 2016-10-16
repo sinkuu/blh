@@ -100,7 +100,7 @@ impl<E: Ellipsoid> From<GeocentricCoord<E>> for GeodeticCoord {
             let lon = f64::atan2(y, x);
             let hgt = f64::sqrt((x.powi(2) + y.powi(2))) / f64::cos(lat) - pv_rc;
 
-            GeodeticCoord::from_rad(lat, lon, hgt)
+            GeodeticCoord::new(lat, lon, hgt)
         }
     }
 }
