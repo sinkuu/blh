@@ -39,6 +39,7 @@ pub struct GeocentricCoord<E> {
     ellipsoid: PhantomData<E>,
 }
 
+// This can't be derived because `E` can be an non-`PartialEq` type.
 impl<E> PartialEq for GeocentricCoord<E> {
     fn eq(&self, other: &GeocentricCoord<E>) -> bool {
         let &GeocentricCoord { x: sx, y: sy, z: sz, .. } = self;
