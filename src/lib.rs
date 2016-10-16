@@ -13,18 +13,20 @@ pub struct GeodeticCoord {
 }
 
 impl GeodeticCoord {
-    pub fn from_deg(lat: f64, lon: f64, hgt: f64) -> Self {
+    #[inline]
+    pub fn new(lat: f64, lon: f64, hgt: f64) -> Self {
         GeodeticCoord {
-            lat: lat.to_radians(),
-            lon: lon.to_radians(),
+            lat: lat,
+            lon: lon,
             hgt: hgt,
         }
     }
 
-    pub fn from_rad(lat: f64, lon: f64, hgt: f64) -> Self {
+    #[inline]
+    pub fn from_deg(lat: f64, lon: f64, hgt: f64) -> Self {
         GeodeticCoord {
-            lat: lat,
-            lon: lon,
+            lat: lat.to_radians(),
+            lon: lon.to_radians(),
             hgt: hgt,
         }
     }
@@ -49,6 +51,7 @@ impl<E> PartialEq for GeocentricCoord<E> {
 }
 
 impl<E> GeocentricCoord<E> {
+    #[inline]
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         GeocentricCoord {
             x: x,
