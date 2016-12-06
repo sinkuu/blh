@@ -3,7 +3,7 @@ extern crate euclid;
 use euclid::{Degrees, Radians};
 
 pub mod ellipsoid;
-pub use ellipsoid::*;
+use ellipsoid::*;
 
 use std::f64;
 use std::marker::PhantomData;
@@ -61,7 +61,7 @@ impl GeodeticCoord {
     }
 }
 
-/// A position on the earth represented by x [m], y [m], and z [m] in ECEF coordinate.
+/// A position on the earth represented by x [m], y [m], and z [m] in geocentric (ECEF) coordinate.
 #[derive(Clone, Copy)]
 pub struct GeocentricCoord<E> {
     pub x: f64,

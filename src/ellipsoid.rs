@@ -6,7 +6,7 @@ pub trait Ellipsoid {
     /// Equatorial radius [m].
     fn radius() -> f64;
 
-    /// Inverse flattening.
+    /// Inverse of flattening.
     fn flattening_inv() -> f64;
 
     /// Polar radius [m].
@@ -48,7 +48,7 @@ pub trait Ellipsoid {
     }
 }
 
-// Earth's ellipsoid constants based on WGS-84.
+/// Earth ellipsoid constants based on WGS-84.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum WGS84 {}
 
@@ -69,7 +69,7 @@ impl Ellipsoid for WGS84 {
     }
 }
 
-// Earth's ellipsoid constants based on GRS80.
+/// Earth ellipsoid constants based on GRS80.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum GRS80 {}
 
