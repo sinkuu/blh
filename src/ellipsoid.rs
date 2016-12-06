@@ -1,6 +1,8 @@
 use std::f64;
 
 pub trait Ellipsoid {
+    fn name() -> &'static str;
+
     /// Equatorial radius [m].
     fn radius() -> f64;
 
@@ -47,10 +49,15 @@ pub trait Ellipsoid {
 }
 
 // Earth's ellipsoid constants based on WGS-84.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum WGS84 {}
 
 impl Ellipsoid for WGS84 {
+    #[inline]
+    fn name() -> &'static str {
+        "WGS84"
+    }
+
     #[inline]
     fn radius() -> f64 {
         6_378_137.0
@@ -63,10 +70,15 @@ impl Ellipsoid for WGS84 {
 }
 
 // Earth's ellipsoid constants based on GRS80.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum GRS80 {}
 
 impl Ellipsoid for GRS80 {
+    #[inline]
+    fn name() -> &'static str {
+        "GRS80"
+    }
+
     #[inline]
     fn radius() -> f64 {
         6_378_137.0

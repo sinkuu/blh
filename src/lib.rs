@@ -1,20 +1,48 @@
+extern crate euclid;
+
+use euclid::{Degrees, Radians};
+
 pub mod ellipsoid;
-use ellipsoid::Ellipsoid;
+pub use ellipsoid::*;
 
 use std::f64;
 use std::marker::PhantomData;
+use std::fmt::{self, Debug, Formatter};
+
+trait DegreesExt<T> {
+    fn to_radians(&self) -> Radians<T>;
+}
+
+impl DegreesExt<f64> for Degrees<f64> {
+    #[inline]
+    fn to_radians(&self) -> Radians<f64> {
+        Radians::new(self.get() * f64::consts::PI / 180.0)
+    }
+}
+
+trait RadiansExt<T> {
+    fn to_degrees(&self) -> Degrees<T>;
+}
+
+impl RadiansExt<f64> for Radians<f64> {
+    #[inline]
+    fn to_degrees(&self) -> Degrees<f64> {
+        Degrees::new(self.get() / f64::consts::PI * 180.0)
+    }
+}
 
 /// A position on the earth represented by latitude [rad], longitude [rad], and geoid height [m].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GeodeticCoord {
-    pub lat: f64,
-    pub lon: f64,
+    pub lat: Radians<f64>,
+    pub lon: Radians<f64>,
     pub hgt: f64,
 }
 
 impl GeodeticCoord {
+    /// Construct a geodetic coord with latitude/longitude in radians.
     #[inline]
-    pub fn new(lat: f64, lon: f64, hgt: f64) -> Self {
+    pub fn new(lat: Radians<f64>, lon: Radians<f64>, hgt: f64) -> Self {
         GeodeticCoord {
             lat: lat,
             lon: lon,
@@ -22,8 +50,9 @@ impl GeodeticCoord {
         }
     }
 
+    /// Construct a geodetic coord with latitude/longitude in degrees.
     #[inline]
-    pub fn from_deg(lat: f64, lon: f64, hgt: f64) -> Self {
+    pub fn from_degrees(lat: Degrees<f64>, lon: Degrees<f64>, hgt: f64) -> Self {
         GeodeticCoord {
             lat: lat.to_radians(),
             lon: lon.to_radians(),
@@ -32,8 +61,8 @@ impl GeodeticCoord {
     }
 }
 
-/// A position on the earth represented by x [m], y[m], and z [m] in ECEF coordinate.
-#[derive(Debug, Clone, Copy)]
+/// A position on the earth represented by x [m], y [m], and z [m] in ECEF coordinate.
+#[derive(Clone, Copy)]
 pub struct GeocentricCoord<E> {
     pub x: f64,
     pub y: f64,
@@ -41,8 +70,19 @@ pub struct GeocentricCoord<E> {
     ellipsoid: PhantomData<E>,
 }
 
+impl<E: Ellipsoid> Debug for GeocentricCoord<E> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        f.debug_struct(&format!("GeocentricCoord<{}>", E::name()))
+            .field("x", &self.x)
+            .field("y", &self.y)
+            .field("z", &self.z)
+            .finish()
+    }
+}
+
 // This can't be derived because `E` can be an non-`PartialEq` type.
 impl<E> PartialEq for GeocentricCoord<E> {
+    #[inline]
     fn eq(&self, other: &GeocentricCoord<E>) -> bool {
         let &GeocentricCoord { x: sx, y: sy, z: sz, .. } = self;
         let &GeocentricCoord { x: ox, y: oy, z: oz, .. } = other;
@@ -72,11 +112,7 @@ impl<E: Ellipsoid> From<GeocentricCoord<E>> for GeodeticCoord {
                 ellipsoid: PhantomData,
             })
         {
-            GeodeticCoord {
-                lat: 0.0,
-                lon: 0.0,
-                hgt: 0.0,
-            }
+            GeodeticCoord::new(Radians::new(0.0), Radians::new(0.0), 0.0)
         } else {
             let GeocentricCoord { x, y, z, .. } = xyz;
 
@@ -100,20 +136,22 @@ impl<E: Ellipsoid> From<GeocentricCoord<E>> for GeodeticCoord {
             let lon = f64::atan2(y, x);
             let hgt = f64::sqrt((x.powi(2) + y.powi(2))) / f64::cos(lat) - pv_rc;
 
-            GeodeticCoord::new(lat, lon, hgt)
+            GeodeticCoord::new(Radians::new(lat), Radians::new(lon), hgt)
         }
     }
 }
 
 impl<E: Ellipsoid> From<GeodeticCoord> for GeocentricCoord<E> {
     fn from(blh: GeodeticCoord) -> GeocentricCoord<E> {
+        let (lat, lon) = (blh.lat.get(), blh.lon.get());
+
         // Prime vertical's radius of carvative
-        let pv_rc = E::radius() / f64::sqrt(1.0 - E::ecc().powi(2) * f64::sin(blh.lat).powi(2));
+        let pv_rc = E::radius() / f64::sqrt(1.0 - E::ecc().powi(2) * f64::sin(lat).powi(2));
 
         GeocentricCoord {
-            x: (pv_rc + blh.hgt) * f64::cos(blh.lat) * f64::cos(blh.lon),
-            y: (pv_rc + blh.hgt) * f64::cos(blh.lat) * f64::sin(blh.lon),
-            z: (pv_rc * (1.0 - E::ecc().powi(2)) + blh.hgt) * f64::sin(blh.lat),
+            x: (pv_rc + blh.hgt) * f64::cos(lat) * f64::cos(lon),
+            y: (pv_rc + blh.hgt) * f64::cos(lat) * f64::sin(lon),
+            z: (pv_rc * (1.0 - E::ecc().powi(2)) + blh.hgt) * f64::sin(lat),
             ellipsoid: PhantomData,
         }
     }
@@ -123,11 +161,9 @@ impl<E: Ellipsoid> From<GeodeticCoord> for GeocentricCoord<E> {
 fn test_pos_conversion() {
     use ellipsoid::{WGS84, GRS80};
 
-    let blh = GeodeticCoord::from_deg(31.0, 131.0, 100.0);
-    assert_eq!(GeodeticCoord::from(GeocentricCoord::<WGS84>::from(blh)),
-               blh);
+    let blh = GeodeticCoord::from_degrees(Degrees::new(31.0), Degrees::new(131.0), 100.0);
+    assert_eq!(GeodeticCoord::from(GeocentricCoord::<WGS84>::from(blh)), blh);
 
-    let xyz = GeodeticCoord::from_deg(33.43, 135.7, 100.0);
-    assert_eq!(GeodeticCoord::from(GeocentricCoord::<GRS80>::from(xyz)),
-               xyz);
+    let xyz = GeodeticCoord::from_degrees(Degrees::new(33.43), Degrees::new(135.7), 100.0);
+    assert_eq!(GeodeticCoord::from(GeocentricCoord::<GRS80>::from(xyz)), xyz);
 }

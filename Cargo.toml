@@ -9,3 +9,4 @@ repository = "https://github.com/sinkuu/blh"
 documentation = "https://docs.rs/blh/*/blh/"
 
 [dependencies]
+euclid = "0.10.2"
