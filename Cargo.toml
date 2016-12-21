@@ -10,3 +10,4 @@ documentation = "https://docs.rs/blh/*/blh/"
 
 [dependencies]
 euclid = "0.10.2"
+approx = "0.1.1"
